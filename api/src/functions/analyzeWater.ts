@@ -36,7 +36,7 @@ export async function analyzeWater(request: HttpRequest, context: InvocationCont
         const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME;
         
         if (!endpoint || !apiKey || !deploymentName) {
-            context.log.error('Azure OpenAI configuration missing', { endpoint: !!endpoint, apiKey: !!apiKey, deploymentName: !!deploymentName });
+            context.log('Azure OpenAI configuration missing', { endpoint: !!endpoint, apiKey: !!apiKey, deploymentName: !!deploymentName });
             return {
                 status: 500,
                 headers: { 
@@ -76,7 +76,7 @@ export async function analyzeWater(request: HttpRequest, context: InvocationCont
         };
 
     } catch (error) {
-        context.log.error('Error processing request:', error);
+        context.log('Error processing request:', error);
         return {
             status: 500,
             headers: { 

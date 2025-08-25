@@ -383,12 +383,12 @@ export default function App() {
 
   const stripTips = () => {
     alert(
-      "Strip tips:
+      `Strip tips:
 • Dip for 1 sec, hold level.
 • Wait the package time (15–30 sec).
 • Read immediately in good light; colors drift after ~60 sec.
 • Compare pad-by-pad; if between colors, pick the closest.
-• Don’t touch pads; check expiration."
+• Don't touch pads; check expiration.`
     );
   };
 
