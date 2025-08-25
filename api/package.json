@@ -4,10 +4,11 @@
   "description": "Azure Functions API for SplashEasy",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm prune --production",
     "watch": "tsc -w",
     "prestart": "npm run build",
     "start": "func start",
+    "clean": "rm -rf dist node_modules/.cache",
     "test": "echo \"No tests yet\""
   },
   "dependencies": {
