@@ -1,5 +1,7 @@
 # SplashEasy - Pool and Hot Tub Care Made Simple
 
+🚀 **Live App**: https://brave-tree-0c17db90f.2.azurestaticapps.net
+
 An AI-powered web application that analyzes pool and hot tub water chemistry and provides personalized treatment recommendations.
 
 ## Features
