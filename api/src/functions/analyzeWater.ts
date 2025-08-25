@@ -30,10 +30,13 @@ export async function analyzeWater(request: HttpRequest, context: InvocationCont
             };
         }
 
-        // Get API key from environment
-        const apiKey = process.env.OPENAI_API_KEY;
-        if (!apiKey) {
-            context.log.error('OPENAI_API_KEY not configured');
+        // Get Azure OpenAI configuration from environment
+        const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
+        const apiKey = process.env.AZURE_OPENAI_API_KEY;
+        const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME;
+        
+        if (!endpoint || !apiKey || !deploymentName) {
+            context.log.error('Azure OpenAI configuration missing', { endpoint: !!endpoint, apiKey: !!apiKey, deploymentName: !!deploymentName });
             return {
                 status: 500,
                 headers: { 
@@ -59,8 +62,8 @@ export async function analyzeWater(request: HttpRequest, context: InvocationCont
             };
         }
 
-        // Initialize OpenAI service and analyze
-        const openaiService = new OpenAIService(apiKey);
+        // Initialize Azure OpenAI service and analyze
+        const openaiService = new OpenAIService(endpoint, apiKey, deploymentName);
         const verdict = await openaiService.analyzeWaterReading(reading);
 
         return {

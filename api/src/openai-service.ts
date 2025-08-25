@@ -4,9 +4,14 @@ import { Reading, Verdict } from './types';
 export class OpenAIService {
   private openai: OpenAI;
 
-  constructor(apiKey: string) {
+  constructor(endpoint: string, apiKey: string, deploymentName: string) {
     this.openai = new OpenAI({
       apiKey: apiKey,
+      baseURL: `${endpoint}/openai/deployments/${deploymentName}`,
+      defaultQuery: { 'api-version': '2024-02-15-preview' },
+      defaultHeaders: {
+        'api-key': apiKey,
+      },
     });
   }
 
@@ -15,7 +20,7 @@ export class OpenAIService {
     
     try {
       const completion = await this.openai.chat.completions.create({
-        model: "gpt-4",
+        model: "", // Model name is not needed for Azure OpenAI deployments
         messages: [
           {
             role: "system",
