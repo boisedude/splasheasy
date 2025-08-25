@@ -1,0 +1,23 @@
+{
+  "name": "splasheasy-api",
+  "version": "1.0.0",
+  "description": "Azure Functions API for SplashEasy",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "prestart": "npm run build",
+    "start": "func start",
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "@azure/functions": "^4.0.1",
+    "openai": "^4.20.1"
+  },
+  "devDependencies": {
+    "@azure/functions": "^4.0.1",
+    "@types/node": "^18.0.0",
+    "azure-functions-core-tools": "^4.0.5095",
+    "typescript": "^4.0.0"
+  }
+}
