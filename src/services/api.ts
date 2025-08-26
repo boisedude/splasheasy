@@ -1,8 +1,6 @@
 import { Reading, Verdict } from '../types';
 
-const API_BASE_URL = window.location.hostname.includes('azurestaticapps.net') 
-  ? '/api' // Azure Static Web Apps automatically routes /api to the Functions app
-  : 'http://localhost:7071/api'; // Local development
+const API_BASE_URL = '/api'; // Same origin requests for Container Apps
 
 export class ApiService {
   static async analyzeWater(reading: Reading): Promise<Verdict> {
