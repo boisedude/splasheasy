@@ -11,7 +11,7 @@ const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static('public'));
+app.use(express.static('dist'));
 
 // CORS middleware
 app.use((req, res, next) => {
@@ -186,7 +186,7 @@ Format as JSON matching this structure:
 
 // Serve React app for all other routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 app.listen(port, '0.0.0.0', () => {
