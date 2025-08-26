@@ -1,6 +1,10 @@
-const express = require('express');
-const path = require('path');
-const { OpenAI } = require('openai');
+import express from 'express';
+import path from 'path';
+import { OpenAI } from 'openai';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -191,4 +195,4 @@ app.listen(port, '0.0.0.0', () => {
   console.log(`API endpoint: http://localhost:${port}/api/analyzeWater`);
 });
 
-module.exports = app;
+export default app;
