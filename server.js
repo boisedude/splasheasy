@@ -28,6 +28,24 @@ app.use((req, res, next) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
+  const fs = require('fs');
+  const distExists = fs.existsSync(path.join(__dirname, 'dist'));
+  const publicExists = fs.existsSync(path.join(__dirname, 'public'));
+  
+  let distContents = [];
+  let publicContents = [];
+  
+  try {
+    if (distExists) {
+      distContents = fs.readdirSync(path.join(__dirname, 'dist'));
+    }
+    if (publicExists) {
+      publicContents = fs.readdirSync(path.join(__dirname, 'public'));
+    }
+  } catch (e) {
+    // ignore errors
+  }
+
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -36,6 +54,13 @@ app.get('/health', (req, res) => {
       hasAzureOpenAIKey: !!process.env.AZURE_OPENAI_API_KEY,
       hasDeploymentName: !!process.env.AZURE_OPENAI_DEPLOYMENT_NAME,
       nodeVersion: process.version
+    },
+    filesystem: {
+      distExists,
+      publicExists,
+      distContents,
+      publicContents,
+      currentDir: __dirname
     }
   });
 });
