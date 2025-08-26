@@ -1,6 +1,6 @@
 import { Reading, Verdict } from '../types';
 
-const API_BASE_URL = '/api'; // Same origin requests for Container Apps
+const API_BASE_URL = 'https://splasheasy-webapp.azurewebsites.net/api'; // App Service backend
 
 export class ApiService {
   static async analyzeWater(reading: Reading): Promise<Verdict> {
