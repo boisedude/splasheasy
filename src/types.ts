@@ -13,7 +13,7 @@ export type Reading = {
   audience: "homeowner" | "pro";
   body: BodyType;
   input_mode?: "numeric" | "strip";
-  volume_gal: number;
+  volume_gal?: number;
   sanitizer: Sanitizer;
   fc?: number;
   br?: number;

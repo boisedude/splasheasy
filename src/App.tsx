@@ -329,7 +329,7 @@ const DEFAULT_READING: Reading = {
   audience: "homeowner",
   body: "hot_tub",
   input_mode: "strip",
-  volume_gal: 350,
+  volume_gal: undefined,
   sanitizer: "bromine",
   br: undefined,
   cc: undefined,
@@ -337,12 +337,12 @@ const DEFAULT_READING: Reading = {
   ta: undefined,
   ch: undefined,
   cya: null,
-  temp_f: 102,
+  temp_f: undefined,
   salt_ppm: null,
-  visible_issues: ["odor"],
-  recent_actions: ["heavy_use"],
+  visible_issues: [],
+  recent_actions: [],
   region: "PNW",
-  strip: { br: "1", cc: "0.5+", ph: "7.8", ta: "60" as any, ch: "150", cya: "0", fc: "unknown" },
+  strip: { br: "unknown", cc: "unknown", ph: "unknown", ta: "unknown", ch: "unknown", cya: "unknown", fc: "unknown" },
 };
 
 export default function App() {
@@ -353,30 +353,53 @@ export default function App() {
   
   const validator = useMemo(() => reading_validator(reading), [reading]);
 
-  // Auto-analyze when reading changes
-  useEffect(() => {
-    const analyzeReading = async () => {
-      if (!reading.volume_gal || !reading.sanitizer) return;
-      
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        const result = await ApiService.analyzeWater(reading);
-        setVerdict(result);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Analysis failed');
-        // Fallback to basic local validation
-        setVerdict(getFallbackVerdict(reading, validator));
-      } finally {
-        setIsLoading(false);
+  // Form validation - check if required readings are provided
+  const isFormValid = useMemo(() => {
+    if (!reading.volume_gal || reading.volume_gal <= 0) return false;
+    if (!reading.sanitizer) return false;
+    
+    if (reading.input_mode === "strip") {
+      // For strip mode, require key readings to not be "unknown"
+      const strip = reading.strip || {};
+      if (reading.sanitizer === "bromine") {
+        if (strip.br === "unknown") return false;
+      } else {
+        if (strip.fc === "unknown") return false;
       }
-    };
+      if (strip.ph === "unknown") return false;
+      if (strip.ta === "unknown") return false;
+    } else {
+      // For numeric mode, require key readings to be defined
+      if (reading.sanitizer === "bromine") {
+        if (reading.br === undefined || reading.br === null) return false;
+      } else {
+        if (reading.fc === undefined || reading.fc === null) return false;
+      }
+      if (reading.ph === undefined || reading.ph === null) return false;
+      if (reading.ta === undefined || reading.ta === null) return false;
+    }
+    
+    return true;
+  }, [reading]);
 
-    // Debounce the analysis to avoid too many API calls
-    const timeoutId = setTimeout(analyzeReading, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [reading, validator]);
+  // Manual analysis function
+  const analyzeReading = async () => {
+    if (!isFormValid) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const result = await ApiService.analyzeWater(reading);
+      setVerdict(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Analysis failed');
+      // Fallback to basic local validation
+      setVerdict(getFallbackVerdict(reading, validator));
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Helpers to update fields safely
   const up = (patch: Partial<Reading>) => setReading({ ...reading, ...patch });
@@ -465,10 +488,11 @@ export default function App() {
 
             {/* Volume & Sanitizer */}
             <LabeledInput
-              label="Volume"
+              label="Volume *"
               value={reading.volume_gal}
-              onChange={(v) => up({ volume_gal: Number(v) || 0 })}
+              onChange={(v) => up({ volume_gal: Number(v) || undefined })}
               suffix="gal"
+              placeholder="e.g. 350"
             />
             <label className="grid gap-1">
               <span className="text-sm text-slate-600">Sanitizer</span>
@@ -490,16 +514,16 @@ export default function App() {
               <>
                 {reading.sanitizer === "bromine" ? (
                   <label className="grid gap-1">
-                    <span className="text-sm text-slate-600">Bromine (strip)</span>
+                    <span className="text-sm text-slate-600">Bromine (strip) *</span>
                     <select className="rounded-xl border bg-white px-3 py-2 shadow-sm" value={reading.strip?.br ?? "unknown"} onChange={(e)=> up({ strip: { ...reading.strip, br: e.target.value as any } })}>
-                      {(["unknown","0","1","2","4","6","10+"] as const).map(v=> <option key={v} value={v}>{v}</option>)}
+                      {(["unknown","0","1","2","4","6","10+"] as const).map(v=> <option key={v} value={v}>{v === "unknown" ? "Select reading..." : v}</option>)}
                     </select>
                   </label>
                 ) : (
                   <label className="grid gap-1">
-                    <span className="text-sm text-slate-600">Free Chlorine (strip)</span>
+                    <span className="text-sm text-slate-600">Free Chlorine (strip) *</span>
                     <select className="rounded-xl border bg-white px-3 py-2 shadow-sm" value={reading.strip?.fc ?? "unknown"} onChange={(e)=> up({ strip: { ...reading.strip, fc: e.target.value as any } })}>
-                      {(["unknown","0","0.5","1","3","5","10+"] as const).map(v=> <option key={v} value={v}>{v}</option>)}
+                      {(["unknown","0","0.5","1","3","5","10+"] as const).map(v=> <option key={v} value={v}>{v === "unknown" ? "Select reading..." : v}</option>)}
                     </select>
                   </label>
                 )}
@@ -510,15 +534,15 @@ export default function App() {
                   </select>
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-sm text-slate-600">pH (strip)</span>
+                  <span className="text-sm text-slate-600">pH (strip) *</span>
                   <select className="rounded-xl border bg-white px-3 py-2 shadow-sm" value={reading.strip?.ph ?? "unknown"} onChange={(e)=> up({ strip: { ...reading.strip, ph: e.target.value as any } })}>
-                    {(["unknown","6.8","7.2","7.5","7.8","8.2+"] as const).map(v=> <option key={v} value={v}>{v}</option>)}
+                    {(["unknown","6.8","7.2","7.5","7.8","8.2+"] as const).map(v=> <option key={v} value={v}>{v === "unknown" ? "Select reading..." : v}</option>)}
                   </select>
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-sm text-slate-600">Total Alkalinity (strip)</span>
+                  <span className="text-sm text-slate-600">Total Alkalinity (strip) *</span>
                   <select className="rounded-xl border bg-white px-3 py-2 shadow-sm" value={reading.strip?.ta ?? "unknown"} onChange={(e)=> up({ strip: { ...reading.strip, ta: e.target.value as any } })}>
-                    {(["unknown","0","40","80","120","180","240+"] as const).map(v=> <option key={v} value={v}>{v}</option>)}
+                    {(["unknown","0","40","80","120","180","240+"] as const).map(v=> <option key={v} value={v}>{v === "unknown" ? "Select reading..." : v}</option>)}
                   </select>
                 </label>
                 <label className="grid gap-1">
@@ -543,13 +567,13 @@ export default function App() {
             ) : (
               <>
                 {reading.sanitizer === "bromine" ? (
-                  <LabeledInput label="Bromine" value={reading.br} onChange={(v) => up({ br: Number(v) })} suffix="ppm" />
+                  <LabeledInput label="Bromine *" value={reading.br} onChange={(v) => up({ br: Number(v) || undefined })} suffix="ppm" placeholder="e.g. 3.0" />
                 ) : (
-                  <LabeledInput label="Free Chlorine" value={reading.fc} onChange={(v) => up({ fc: Number(v) })} suffix="ppm" />
+                  <LabeledInput label="Free Chlorine *" value={reading.fc} onChange={(v) => up({ fc: Number(v) || undefined })} suffix="ppm" placeholder="e.g. 1.5" />
                 )}
-                <LabeledInput label="Combined Chlorine" value={reading.cc} onChange={(v) => up({ cc: Number(v) })} suffix="ppm" />
-                <LabeledInput label="pH" value={reading.ph} onChange={(v) => up({ ph: Number(v) })} />
-                <LabeledInput label="Total Alkalinity" value={reading.ta} onChange={(v) => up({ ta: Number(v) })} suffix="ppm" />
+                <LabeledInput label="Combined Chlorine" value={reading.cc} onChange={(v) => up({ cc: Number(v) || undefined })} suffix="ppm" placeholder="e.g. 0.2" />
+                <LabeledInput label="pH *" value={reading.ph} onChange={(v) => up({ ph: Number(v) || undefined })} placeholder="e.g. 7.4" />
+                <LabeledInput label="Total Alkalinity *" value={reading.ta} onChange={(v) => up({ ta: Number(v) || undefined })} suffix="ppm" placeholder="e.g. 80" />
                 <LabeledInput label="Calcium Hardness" value={reading.ch} onChange={(v) => up({ ch: Number(v) })} suffix="ppm" />
                 <LabeledInput label="Cyanuric Acid" value={reading.cya ?? ""} onChange={(v) => up({ cya: v === "" ? null : Number(v) })} suffix="ppm" />
                 <LabeledInput label="Temperature" value={reading.temp_f} onChange={(v) => up({ temp_f: Number(v) })} suffix="°F" />
@@ -593,6 +617,38 @@ export default function App() {
               </select>
             </label>
 
+            {/* Required fields validation message */}
+            {!isFormValid && (
+              <div className="col-span-2">
+                <div className="rounded-xl border border-blue-300 bg-blue-50 p-3">
+                  <div className="font-medium mb-1 flex items-center gap-2">
+                    <Info className="h-4 w-4" /> Required Test Readings
+                  </div>
+                  <div className="text-sm text-blue-700 mb-2">
+                    To get an accurate analysis, please provide these essential readings:
+                  </div>
+                  <ul className="list-disc ml-5 text-sm text-blue-800">
+                    {(!reading.volume_gal || reading.volume_gal <= 0) && <li>Volume (gallons)</li>}
+                    {reading.input_mode === "strip" ? (
+                      <>
+                        {reading.sanitizer === "bromine" && reading.strip?.br === "unknown" && <li>Bromine level (from test strip)</li>}
+                        {reading.sanitizer !== "bromine" && reading.strip?.fc === "unknown" && <li>Free Chlorine level (from test strip)</li>}
+                        {reading.strip?.ph === "unknown" && <li>pH level (from test strip)</li>}
+                        {reading.strip?.ta === "unknown" && <li>Total Alkalinity (from test strip)</li>}
+                      </>
+                    ) : (
+                      <>
+                        {reading.sanitizer === "bromine" && (reading.br === undefined || reading.br === null) && <li>Bromine level (ppm)</li>}
+                        {reading.sanitizer !== "bromine" && (reading.fc === undefined || reading.fc === null) && <li>Free Chlorine level (ppm)</li>}
+                        {(reading.ph === undefined || reading.ph === null) && <li>pH level</li>}
+                        {(reading.ta === undefined || reading.ta === null) && <li>Total Alkalinity (ppm)</li>}
+                      </>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            )}
+
             {/* Validator flags */}
             {validator.flags.length > 0 && (
               <div className="col-span-2">
@@ -607,6 +663,37 @@ export default function App() {
                 </div>
               </div>
             )}
+
+            {/* Submit button */}
+            <div className="col-span-2 mt-4">
+              <button
+                type="button"
+                onClick={analyzeReading}
+                disabled={!isFormValid || isLoading}
+                className={`w-full rounded-xl px-4 py-3 font-semibold text-white transition-colors ${
+                  isFormValid && !isLoading
+                    ? "bg-sky-600 hover:bg-sky-700"
+                    : "bg-slate-300 cursor-not-allowed"
+                }`}
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Droplet className="h-5 w-5 animate-pulse" />
+                    Analyzing Water Chemistry...
+                  </div>
+                ) : isFormValid ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Beaker className="h-5 w-5" />
+                    Get Water Analysis
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    Enter Required Test Readings First
+                  </div>
+                )}
+              </button>
+            </div>
           </div>
         </Section>
 
@@ -624,6 +711,21 @@ export default function App() {
                 <div className="text-amber-800 font-medium mb-1">Connection Issue</div>
                 <div className="text-sm text-amber-700 mb-2">{error}</div>
                 <div className="text-xs text-amber-600">Using fallback analysis below</div>
+              </div>
+            </Section>
+          ) : !verdict ? (
+            <Section title="Ready for Analysis" icon={<Droplet className="h-5 w-5 text-sky-600" />}>
+              <div className="text-center py-8">
+                <div className="mb-4">
+                  <Beaker className="h-12 w-12 text-slate-300 mx-auto" />
+                </div>
+                <div className="text-slate-600 mb-2">Enter your water test readings on the left</div>
+                <div className="text-sm text-slate-500">
+                  We need at least: Volume, Sanitizer level, pH, and Total Alkalinity
+                </div>
+                <div className="mt-4 text-xs text-slate-400">
+                  Pro tip: More readings = more accurate recommendations
+                </div>
               </div>
             </Section>
           ) : null}
